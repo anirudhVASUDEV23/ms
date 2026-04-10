@@ -1,10 +1,20 @@
 version: "3.8"
 
 services:
+  caddy:
+    image: caddy:latest
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - api-gateway
+
   api-gateway:
     build: ./api-gateway
-    ports:
-      - "3000:3000"
     env_file: ./api-gateway/.env
     depends_on:
       - redis
@@ -12,6 +22,8 @@ services:
     environment:
       - REDIS_URL=redis://redis:6379
       - RABBITMQ_URL=amqp://admin:strongpassword@rabbitmq:5672
+    expose:
+      - "3000"
 
   identity-service:
     build: ./identity-service
@@ -22,6 +34,8 @@ services:
     environment:
       - REDIS_URL=redis://redis:6379
       - RABBITMQ_URL=amqp://admin:strongpassword@rabbitmq:5672
+    expose:
+      - "3001"
 
   post-service:
     build: ./post-service
@@ -32,6 +46,8 @@ services:
     environment:
       - REDIS_URL=redis://redis:6379
       - RABBITMQ_URL=amqp://admin:strongpassword@rabbitmq:5672
+    expose:
+      - "3002"
 
   media-service:
     build: ./media-service
@@ -42,6 +58,8 @@ services:
     environment:
       - REDIS_URL=redis://redis:6379
       - RABBITMQ_URL=amqp://admin:strongpassword@rabbitmq:5672
+    expose:
+      - "3003"
 
   search-service:
     build: ./search-service
@@ -52,22 +70,23 @@ services:
     environment:
       - REDIS_URL=redis://redis:6379
       - RABBITMQ_URL=amqp://admin:strongpassword@rabbitmq:5672
+    expose:
+      - "3004"
 
   redis:
     image: redis:alpine
-    ports:
-      - "6379:6379"
+    expose:
+      - "6379"
 
   rabbitmq:
     image: rabbitmq:3-management
     environment:
       RABBITMQ_DEFAULT_USER: admin
       RABBITMQ_DEFAULT_PASS: strongpassword
-    ports:
-      - "5672:5672"
-      - "15672:15672"
-    healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
+    expose:
+      - "5672"
+      - "15672"
+
+volumes:
+  caddy_data:
+  caddy_config:

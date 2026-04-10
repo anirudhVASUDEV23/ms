@@ -1,92 +1,89 @@
-version: "3.8"
-
 services:
-  caddy:
-    image: caddy:latest
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile
-      - caddy_data:/data
-      - caddy_config:/config
-    depends_on:
-      - api-gateway
-
   api-gateway:
     build: ./api-gateway
     env_file: ./api-gateway/.env
     depends_on:
-      - redis
-      - rabbitmq
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_started
     environment:
       - REDIS_URL=redis://redis:6379
       - RABBITMQ_URL=amqp://admin:strongpassword@rabbitmq:5672
-    expose:
-      - "3000"
+    ports:
+      - "3000:3000"
 
   identity-service:
     build: ./identity-service
     env_file: ./identity-service/.env
     depends_on:
-      - redis
-      - rabbitmq
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_started
     environment:
       - REDIS_URL=redis://redis:6379
       - RABBITMQ_URL=amqp://admin:strongpassword@rabbitmq:5672
-    expose:
-      - "3001"
+    ports:
+      - "3001:3001"
 
   post-service:
     build: ./post-service
     env_file: ./post-service/.env
     depends_on:
-      - redis
-      - rabbitmq
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_started
     environment:
       - REDIS_URL=redis://redis:6379
       - RABBITMQ_URL=amqp://admin:strongpassword@rabbitmq:5672
-    expose:
-      - "3002"
+    ports:
+      - "3002:3002"
 
   media-service:
     build: ./media-service
     env_file: ./media-service/.env
     depends_on:
-      - redis
-      - rabbitmq
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_started
     environment:
       - REDIS_URL=redis://redis:6379
       - RABBITMQ_URL=amqp://admin:strongpassword@rabbitmq:5672
-    expose:
-      - "3003"
+    ports:
+      - "3003:3003"
 
   search-service:
     build: ./search-service
     env_file: ./search-service/.env
     depends_on:
-      - redis
-      - rabbitmq
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_started
     environment:
       - REDIS_URL=redis://redis:6379
       - RABBITMQ_URL=amqp://admin:strongpassword@rabbitmq:5672
-    expose:
-      - "3004"
+    ports:
+      - "3004:3004"
 
   redis:
     image: redis:alpine
-    expose:
-      - "6379"
+    ports:
+      - "6379:6379"
 
   rabbitmq:
     image: rabbitmq:3-management
     environment:
       RABBITMQ_DEFAULT_USER: admin
       RABBITMQ_DEFAULT_PASS: strongpassword
-    expose:
-      - "5672"
-      - "15672"
-
-volumes:
-  caddy_data:
-  caddy_config:
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5

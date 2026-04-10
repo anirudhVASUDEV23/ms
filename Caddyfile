@@ -1,0 +1,3 @@
+api.anirudh23.xyz {
+    reverse_proxy api-gateway:3000
+}
